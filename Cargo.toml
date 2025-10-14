@@ -1,6 +1,6 @@
 [package]
-name = "pdfium-render"
-version = "0.8.36"
+name = "pdfium-render-bundled"
+version = "0.1.0"
 edition = "2021"
 rust-version = "1.61"
 publish = true
@@ -65,10 +65,10 @@ rayon = "1"                                    # Used by examples/thread_safe.rs
 axum = "0"                                     # Used by examples/axum_once_cell.rs
 tokio = { version = "1", features = ["full"] } # Used by examples/axum_once_cell.rs
 tower = "0"                                    # Used by examples/axum_once_cell.rs
-pdfium-render = { path = "./", default-features = false, features = ["sync"] } # sync feature required by examples/axum_once_cell.rs
+# pdfium-render = { path = "./", default-features = false, features = ["sync"] } # sync feature required by examples/axum_once_cell.rs
 
 [features]
-default = ["pdfium_latest", "thread_safe", "image"]
+default = ["static", "libc++", "pdfium_latest", "thread_safe", "image"]
 image = ["image_latest"] # A synonym for backwards compatibility
 bindings = ["dep:bindgen"]
 static = []
