@@ -312,7 +312,7 @@ mod tests {
         }
 
         let pdfium = test_bind_to_pdfium();
-        let document = pdfium.load_pdf_from_file("./test/test-toc.pdf", None)?;
+        let document = pdfium.load_pdf_from_file("./test/test-outline.pdf", None)?;
 
         // Should be able to find Sections 3 and 4
         let section3 = document.bookmarks().find_first_by_title("Section 3")?;
@@ -556,7 +556,7 @@ mod tests {
         assert_eq!(hash(&all_bookmarks[0]), hash(&the_clone));
 
         // Load the document a second time, and assert that the bookmarks are different.
-        let document2 = pdfium.load_pdf_from_file("./test/test-toc.pdf", None)?;
+        let document2 = pdfium.load_pdf_from_file("./test/test-outline.pdf", None)?;
         let all_bookmarks2: Vec<_> = document2.bookmarks().iter().collect();
         assert_eq!(all_bookmarks.len(), all_bookmarks2.len());
         for i in 0..all_bookmarks.len() {
