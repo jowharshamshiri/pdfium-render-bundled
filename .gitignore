@@ -29,3 +29,4 @@ form-test-page-*.jpg
 .history/
 dist/
 diffs/
+.wsb/
