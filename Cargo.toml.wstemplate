@@ -109,7 +109,7 @@ publish = true
 readme = "README.md"
 repository = "https://github.com/ajrcarey/pdfium-render"
 rust-version = "1.61"
-version = "1.463.4189"
+version = "{{ project.version }}"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 libloading = "0"
