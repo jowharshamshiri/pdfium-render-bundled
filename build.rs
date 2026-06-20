@@ -195,6 +195,20 @@ fn statically_link_pdfium() {
         println!("cargo:rustc-link-lib=framework=Security");
     }
     
+    // Windows: MSVC links the CRT and C++ runtime automatically. PDFium and
+    // Chromium's base/partition_alloc reference a set of Win32 system import
+    // libraries (GDI text backend, timeGetTime from winmm, Uniscribe, etc.).
+    // If linking surfaces more unresolved externals, add the named libs here.
+    #[cfg(target_os = "windows")]
+    {
+        for lib in [
+            "gdi32", "user32", "advapi32", "winmm", "ole32", "oleaut32",
+            "shell32", "shlwapi", "version", "usp10",
+        ] {
+            println!("cargo:rustc-link-lib=dylib={}", lib);
+        }
+    }
+
     // C++ standard library linking
     #[cfg(feature = "libstdc++")]
     println!("cargo:rustc-link-lib=dylib=stdc++");
