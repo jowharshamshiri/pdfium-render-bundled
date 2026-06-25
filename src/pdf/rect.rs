@@ -287,8 +287,9 @@ impl Display for PdfRect {
 mod tests {
     use crate::prelude::*;
 
+    // TEST0014: Rect is inside
     #[test]
-    fn test_rect_is_inside() {
+    fn test0014_rect_is_inside() {
         assert!(PdfRect::new_from_values(3.0, 3.0, 9.0, 9.0)
             .is_inside(&PdfRect::new_from_values(2.0, 2.0, 10.0, 10.0)));
 
@@ -305,8 +306,9 @@ mod tests {
             .is_inside(&PdfRect::new_from_values(5.0, 8.0, 10.0, 10.0)));
     }
 
+    // TEST0015: Rect does overlap
     #[test]
-    fn test_rect_does_overlap() {
+    fn test0015_rect_does_overlap() {
         assert!(PdfRect::new_from_values(2.0, 2.0, 7.0, 7.0)
             .does_overlap(&PdfRect::new_from_values(5.0, 4.0, 10.0, 10.0)));
 
@@ -317,8 +319,9 @@ mod tests {
             .does_overlap(&PdfRect::new_from_values(5.0, 8.0, 10.0, 10.0)));
     }
 
+    // TEST0016: Transform rect
     #[test]
-    fn test_transform_rect() {
+    fn test0016_transform_rect() {
         let delta_x = PdfPoints::new(50.0);
         let delta_y = PdfPoints::new(-25.0);
 
@@ -339,8 +342,9 @@ mod tests {
         assert_eq!(result.right(), right + delta_x);
     }
 
+    // TEST0017: Coordinate space order guard
     #[test]
-    fn test_coordinate_space_order_guard() {
+    fn test0017_coordinate_space_order_guard() {
         // We create a rectangle with the horizontal and vertical coordinates
         // around the wrong way...
 

@@ -1064,8 +1064,9 @@ mod tests {
     use crate::utils::test::test_bind_to_pdfium;
     use image_025::{GenericImageView, ImageFormat};
 
+    // TEST0028: Page rendering reusing bitmap
     #[test]
-    fn test_page_rendering_reusing_bitmap() -> Result<(), PdfiumError> {
+    fn test0028_page_rendering_reusing_bitmap() -> Result<(), PdfiumError> {
         // Renders each page in the given test PDF file to a separate JPEG file
         // by re-using the same bitmap buffer for each render.
 
@@ -1094,8 +1095,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0029: Rendered image dimension
     #[test]
-    fn test_rendered_image_dimension() -> Result<(), PdfiumError> {
+    fn test0029_rendered_image_dimension() -> Result<(), PdfiumError> {
         // Checks that downscaled dimensions are rounded correctly during page rendering.
         // See: https://github.com/ajrcarey/pdfium-render/pull/87
 

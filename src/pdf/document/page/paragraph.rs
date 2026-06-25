@@ -865,8 +865,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium; // Temporary until PdfParagraph is included in the prelude.
 
+    // TEST0044: Paragraph construction
     #[test]
-    fn test_paragraph_construction() -> Result<(), PdfiumError> {
+    fn test0044_paragraph_construction() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let document = pdfium.load_pdf_from_file("./test/text-test.pdf", None)?;

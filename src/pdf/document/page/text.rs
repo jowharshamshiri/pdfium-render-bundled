@@ -424,8 +424,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0036: Overlapping chars results
     #[test]
-    fn test_overlapping_chars_results() -> Result<(), PdfiumError> {
+    fn test0036_overlapping_chars_results() -> Result<(), PdfiumError> {
         // Test to make sure the result of the .chars_for_object() function returns the
         // correct results in the event of overlapping text objects.
         // For more details, see: https://github.com/ajrcarey/pdfium-render/issues/98
@@ -503,8 +504,9 @@ mod tests {
         }
     }
 
+    // TEST0037: Text chars results equality
     #[test]
-    fn test_text_chars_results_equality() -> Result<(), PdfiumError> {
+    fn test0037_text_chars_results_equality() -> Result<(), PdfiumError> {
         // For all available test documents, check that the results of
         // PdfPageObjectText::text() and PdfPageObjectText::chars() match.
 

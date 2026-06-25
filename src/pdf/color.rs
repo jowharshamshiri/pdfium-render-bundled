@@ -376,8 +376,9 @@ impl PdfColor {
 mod tests {
     use crate::prelude::*;
 
+    // TEST0021: From hex
     #[test]
-    fn test_from_hex() {
+    fn test0021_from_hex() {
         assert_eq!(
             PdfColor::from_hex("#800080").unwrap().color_components(),
             PdfColor::PURPLE.color_components()
@@ -392,8 +393,9 @@ mod tests {
         );
     }
 
+    // TEST0022: To hex
     #[test]
-    fn test_to_hex() {
+    fn test0022_to_hex() {
         assert_eq!(PdfColor::PURPLE.to_hex(), "800080");
         assert_eq!(PdfColor::PURPLE.with_alpha(64).to_hex(), "800080");
         assert_eq!(PdfColor::PURPLE.to_hex_with_alpha(), "FF800080");

@@ -999,8 +999,9 @@ mod test {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0057: Group bounds
     #[test]
-    fn test_group_bounds() -> Result<(), PdfiumError> {
+    fn test0057_group_bounds() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let document = pdfium.load_pdf_from_file("./test/export-test.pdf", None)?;
@@ -1034,8 +1035,9 @@ mod test {
         Ok(())
     }
 
+    // TEST0058: Group text
     #[test]
-    fn test_group_text() -> Result<(), PdfiumError> {
+    fn test0058_group_text() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let document = pdfium.load_pdf_from_file("./test/export-test.pdf", None)?;
@@ -1064,8 +1066,9 @@ mod test {
         Ok(())
     }
 
+    // TEST0059: Group apply
     #[test]
-    fn test_group_apply() -> Result<(), PdfiumError> {
+    fn test0059_group_apply() -> Result<(), PdfiumError> {
         // Measure the bounds of a group of objects, translate the group, and confirm the
         // bounds have changed.
 

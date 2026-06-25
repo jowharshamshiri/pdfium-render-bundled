@@ -197,9 +197,10 @@ mod tests {
     use std::fs::File;
     use std::path::Path;
 
+    // TEST0001: Readme example
     #[test]
     #[cfg(not(feature = "static"))]
-    fn test_readme_example() -> Result<(), PdfiumError> {
+    fn test0001_readme_example() -> Result<(), PdfiumError> {
         // Runs the code in the main example at the top of README.md.
 
         fn export_pdf_to_jpegs(
@@ -240,9 +241,10 @@ mod tests {
         export_pdf_to_jpegs(&"./test/export-test.pdf", None)
     }
 
+    // TEST0002: Dynamic bindings
     #[test]
     #[cfg(not(feature = "static"))]
-    fn test_dynamic_bindings() -> Result<(), PdfiumError> {
+    fn test0002_dynamic_bindings() -> Result<(), PdfiumError> {
         let pdfium = Pdfium::new(
             Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./"))
                 .or_else(|_| Pdfium::bind_to_system_library())?,
@@ -270,16 +272,18 @@ mod tests {
         Ok(())
     }
 
+    // TEST0003: Static bindings
     #[test]
     #[cfg(feature = "static")]
-    fn test_static_bindings() {
+    fn test0003_static_bindings() {
         // Simply checks that the static bindings contain no compilation errors.
 
         Pdfium::bind_to_statically_linked_library().unwrap();
     }
 
+    // TEST0004: Reader lifetime
     #[test]
-    fn test_reader_lifetime() -> Result<(), PdfiumError> {
+    fn test0004_reader_lifetime() -> Result<(), PdfiumError> {
         // Confirms that a reader given to Pdfium::load_pdf_from_reader() does not need
         // a lifetime longer than that of the PdfDocument it is used to create.
 

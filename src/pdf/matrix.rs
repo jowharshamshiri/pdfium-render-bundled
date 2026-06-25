@@ -346,8 +346,9 @@ impl Mul for PdfMatrix {
 mod tests {
     use crate::prelude::*;
 
+    // TEST0023: Matrix apply to points
     #[test]
-    fn test_matrix_apply_to_points() {
+    fn test0023_matrix_apply_to_points() {
         let delta_x = PdfPoints::new(50.0);
         let delta_y = PdfPoints::new(-25.0);
 

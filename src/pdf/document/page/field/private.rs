@@ -529,8 +529,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0048: Get form field flags
     #[test]
-    fn test_get_form_field_flags() -> Result<(), PdfiumError> {
+    fn test0048_get_form_field_flags() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
         let document = pdfium.load_pdf_from_file("test/form-test.pdf", None)?;
         let page = document.pages().first()?;
@@ -565,9 +566,10 @@ mod tests {
         Ok(())
     }
 
+    // TEST0049: Set form field flags
     #[cfg(any(feature = "pdfium_future", feature = "pdfium_7350"))]
     #[test]
-    fn test_set_form_field_flags() -> Result<(), PdfiumError> {
+    fn test0049_set_form_field_flags() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
         let mut document = pdfium.load_pdf_from_file("test/form-test.pdf", None)?;
         let mut page = document.pages_mut().first()?;
@@ -607,9 +609,10 @@ mod tests {
         Ok(())
     }
 
+    // TEST0050: Update one form field flag
     #[cfg(any(feature = "pdfium_future", feature = "pdfium_7350"))]
     #[test]
-    fn test_update_one_form_field_flag() -> Result<(), PdfiumError> {
+    fn test0050_update_one_form_field_flag() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
         let mut document = pdfium.load_pdf_from_file("test/form-test.pdf", None)?;
         let mut page = document.pages_mut().first()?;

@@ -1265,8 +1265,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0033: Apply matrix
     #[test]
-    fn test_apply_matrix() -> Result<(), PdfiumError> {
+    fn test0033_apply_matrix() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
@@ -1303,8 +1304,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0034: Reset matrix to identity
     #[test]
-    fn test_reset_matrix_to_identity() -> Result<(), PdfiumError> {
+    fn test0034_reset_matrix_to_identity() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
@@ -1343,8 +1345,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0035: Transform captured in content regeneration
     #[test]
-    fn test_transform_captured_in_content_regeneration() -> Result<(), PdfiumError> {
+    fn test0035_transform_captured_in_content_regeneration() -> Result<(), PdfiumError> {
         // The purpose of the test is to confirm that object transformations are correctly
         // applied to the page's content streams by automatic content regeneration.
         // In pdfium-render versions 0.8.27 and earlier, this was not reliably the case.

@@ -9711,8 +9711,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0005: Is true
     #[test]
-    fn test_is_true() -> Result<(), PdfiumError> {
+    fn test0005_is_true() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         assert!(!pdfium.bindings().is_true(0));

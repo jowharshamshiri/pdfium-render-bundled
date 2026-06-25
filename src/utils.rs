@@ -487,7 +487,7 @@ mod tests {
     // Tests of color conversion functions.
 
     #[test]
-    fn test_unaligned_bgr_to_rgba() {
+    fn test0006_unaligned_bgr_to_rgba() {
         let data: [u8; 15] = [2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12];
 
         let result = unaligned_rgb_to_bgra(data.as_slice());
@@ -498,8 +498,9 @@ mod tests {
         );
     }
 
+    // TEST0007: Aligned bgr to rgba
     #[test]
-    fn test_aligned_bgr_to_rgba() {
+    fn test0007_aligned_bgr_to_rgba() {
         let data: [u8; 24] = [
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
         ];
@@ -557,8 +558,9 @@ mod tests {
         );
     }
 
+    // TEST0008: Bgra to rgba
     #[test]
-    fn test_bgra_to_rgba() {
+    fn test0008_bgra_to_rgba() {
         let data: [u8; 16] = [2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15];
 
         let result = bgra_to_rgba(data.as_slice());
@@ -569,8 +571,9 @@ mod tests {
         );
     }
 
+    // TEST0009: Rgb to bgra
     #[test]
-    fn test_rgb_to_bgra() {
+    fn test0009_rgb_to_bgra() {
         let data: [u8; 15] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 
         let result = unaligned_rgb_to_bgra(data.as_slice());
@@ -581,8 +584,9 @@ mod tests {
         );
     }
 
+    // TEST0010: Rgba to bgra
     #[test]
-    fn test_rgba_to_bgra() {
+    fn test0010_rgba_to_bgra() {
         let data: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
         let result = rgba_to_bgra(data.as_slice());
@@ -593,8 +597,9 @@ mod tests {
         );
     }
 
+    // TEST0011: Aligned grayscale to unaligned
     #[test]
-    fn test_aligned_grayscale_to_unaligned() {
+    fn test0011_aligned_grayscale_to_unaligned() {
         let data: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
         let result = aligned_grayscale_to_unaligned(data.as_slice(), 1, 4);
@@ -605,7 +610,7 @@ mod tests {
     // Tests of date time conversion functions.
 
     #[test]
-    fn test_date_time_to_pdf_date_string() {
+    fn test0012_date_time_to_pdf_date_string() {
         assert_eq!(
             date_time_to_pdf_string(Utc.with_ymd_and_hms(1998, 12, 23, 19, 52, 00).unwrap()),
             "D:19981223195200Z00'00'"
@@ -627,8 +632,9 @@ mod tests {
         )
     }
 
+    // TEST0013: Valid utf16le from emoji
     #[test]
-    fn test_valid_utf16le_from_emoji() {
+    fn test0013_valid_utf16le_from_emoji() {
         let emoji = "💁👵🧕";
 
         assert_eq!(get_string_from_pdfium_utf16le_bytes(get_pdfium_utf16le_bytes_from_str(emoji)).unwrap(), emoji);

@@ -295,8 +295,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0038: Cache instantiation
     #[test]
-    fn test_cache_instantiation() -> Result<(), PdfiumError> {
+    fn test0038_cache_instantiation() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
@@ -330,8 +331,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0039: Get and set index for page
     #[test]
-    fn test_get_and_set_index_for_page() -> Result<(), PdfiumError> {
+    fn test0039_get_and_set_index_for_page() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let mut document_0 = pdfium.create_new_pdf()?;
@@ -523,8 +525,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0040: Get invalid page
     #[test]
-    fn test_get_invalid_page() -> Result<(), PdfiumError> {
+    fn test0040_get_invalid_page() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
@@ -564,8 +567,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0041: Insert pages at index
     #[test]
-    fn test_insert_pages_at_index() -> Result<(), PdfiumError> {
+    fn test0041_insert_pages_at_index() -> Result<(), PdfiumError> {
         // Create a document with 100 pages, caching the index position of each page.
 
         let pdfium = test_bind_to_pdfium();
@@ -730,8 +734,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0042: Delete pages at index
     #[test]
-    fn test_delete_pages_at_index() -> Result<(), PdfiumError> {
+    fn test0042_delete_pages_at_index() -> Result<(), PdfiumError> {
         // Create a document with 100 pages, caching the index position of each page.
 
         let pdfium = test_bind_to_pdfium();
@@ -880,8 +885,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0043: Pathological delete all pages
     #[test]
-    fn test_pathological_delete_all_pages() -> Result<(), PdfiumError> {
+    fn test0043_pathological_delete_all_pages() -> Result<(), PdfiumError> {
         // Create a document with 100 pages, caching the index position of each page,
         // then delete all one hundred pages, testing the cached maximum page index
         // after each deletion.

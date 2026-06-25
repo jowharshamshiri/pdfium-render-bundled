@@ -349,8 +349,9 @@ impl Display for PdfQuadPoints {
 mod tests {
     use crate::prelude::*;
 
+    // TEST0018: Quadpoints extents
     #[test]
-    fn test_quadpoints_extents() {
+    fn test0018_quadpoints_extents() {
         let r = PdfRect::new_from_values(50.0, 100.0, 300.0, 200.0);
 
         assert_eq!(r.to_quad_points().left().value, 100.0);
@@ -362,8 +363,9 @@ mod tests {
         assert_eq!(r.to_quad_points().height().value, 250.0);
     }
 
+    // TEST0019: Quadpoints to rect
     #[test]
-    fn test_quadpoints_to_rect() {
+    fn test0019_quadpoints_to_rect() {
         let r = PdfRect::new_from_values(100.0, 100.0, 200.0, 200.0);
         assert_eq!(r.to_quad_points().to_rect(), r);
 

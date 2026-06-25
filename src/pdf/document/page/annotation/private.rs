@@ -592,8 +592,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0045: Get annotation flags
     #[test]
-    fn test_get_annotation_flags() -> Result<(), PdfiumError> {
+    fn test0045_get_annotation_flags() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
         let document = pdfium.load_pdf_from_file("test/form-test.pdf", None)?;
         let page = document.pages().first()?;
@@ -627,8 +628,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0046: Set annotation flags
     #[test]
-    fn test_set_annotation_flags() -> Result<(), PdfiumError> {
+    fn test0046_set_annotation_flags() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
         let mut document = pdfium.load_pdf_from_file("test/form-test.pdf", None)?;
         let mut page = document.pages_mut().first()?;
@@ -667,8 +669,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0047: Update one annotation flag
     #[test]
-    fn test_update_one_annotation_flag() -> Result<(), PdfiumError> {
+    fn test0047_update_one_annotation_flag() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
         let mut document = pdfium.load_pdf_from_file("test/form-test.pdf", None)?;
         let mut page = document.pages_mut().first()?;

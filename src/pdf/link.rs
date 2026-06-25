@@ -115,8 +115,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0024: Link rect
     #[test]
-    fn test_link_rect() -> Result<(), PdfiumError> {
+    fn test0024_link_rect() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         // The document under test contains a single page with a single link.

@@ -1001,8 +1001,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0055: Page image object retains format
     #[test]
-    fn test_page_image_object_retains_format() -> Result<(), PdfiumError> {
+    fn test0055_page_image_object_retains_format() -> Result<(), PdfiumError> {
         // Make sure the format of the image we pass into a new PdfPageImageObject is the
         // same when we later retrieve it.
 
@@ -1078,8 +1079,9 @@ mod tests {
         true
     }
 
+    // TEST0056: Image scaling keeps aspect ratio
     #[test]
-    fn test_image_scaling_keeps_aspect_ratio() -> Result<(), PdfiumError> {
+    fn test0056_image_scaling_keeps_aspect_ratio() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;

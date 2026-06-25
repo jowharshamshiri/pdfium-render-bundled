@@ -199,8 +199,9 @@ impl Display for PdfPoints {
 mod tests {
     use crate::prelude::*;
 
+    // TEST0020: Points ordering
     #[test]
-    fn test_points_ordering() {
+    fn test0020_points_ordering() {
         assert!(PdfPoints::new(1.0) > PdfPoints::ZERO);
         assert_eq!(PdfPoints::ZERO, -PdfPoints::ZERO);
         assert!(PdfPoints::ZERO > PdfPoints::new(-1.0));

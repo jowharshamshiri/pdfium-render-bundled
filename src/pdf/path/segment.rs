@@ -121,8 +121,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0026: Point transform
     #[test]
-    fn test_point_transform() {
+    fn test0026_point_transform() {
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf().unwrap();
@@ -174,8 +175,9 @@ mod tests {
         assert_eq!(transformed_segment_1.y(), raw_segment_1.y() + delta_y);
     }
 
+    // TEST0027: Point transform during iteration
     #[test]
-    fn test_point_transform_during_iteration() {
+    fn test0027_point_transform_during_iteration() {
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf().unwrap();

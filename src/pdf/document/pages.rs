@@ -666,8 +666,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0031: Page size
     #[test]
-    fn test_page_size() -> Result<(), PdfiumError> {
+    fn test0031_page_size() -> Result<(), PdfiumError> {
         // Tests the dimensions of each page in a sample file.
 
         let pdfium = test_bind_to_pdfium();
@@ -684,8 +685,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0032: Page sizes
     #[test]
-    fn test_page_sizes() -> Result<(), PdfiumError> {
+    fn test0032_page_sizes() -> Result<(), PdfiumError> {
         // Tests the dimensions of all pages in a sample file.
 
         let pdfium = test_bind_to_pdfium();

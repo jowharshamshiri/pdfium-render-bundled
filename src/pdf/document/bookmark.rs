@@ -299,8 +299,9 @@ mod tests {
     use crate::utils::test::test_bind_to_pdfium;
     use std::hash::{DefaultHasher, Hash, Hasher};
 
+    // TEST0030: Bookmarks
     #[test]
-    fn test_bookmarks() -> Result<(), PdfiumError> {
+    fn test0030_bookmarks() -> Result<(), PdfiumError> {
         fn title(bookmark: PdfBookmark) -> String {
             bookmark.title().expect("Bookmark Title")
         }

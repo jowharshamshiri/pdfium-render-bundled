@@ -395,8 +395,9 @@ mod tests {
     use crate::utils::mem::create_sized_buffer;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0025: From bytes
     #[test]
-    fn test_from_bytes() -> Result<(), PdfiumError> {
+    fn test0025_from_bytes() -> Result<(), PdfiumError> {
         let pdfium = test_bind_to_pdfium();
 
         let test_width = 2000;

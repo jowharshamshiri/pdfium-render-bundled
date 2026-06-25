@@ -505,8 +505,9 @@ mod tests {
     use crate::prelude::*;
     use crate::utils::test::test_bind_to_pdfium;
 
+    // TEST0051: Object get translation
     #[test]
-    fn test_object_get_translation() -> Result<(), PdfiumError> {
+    fn test0051_object_get_translation() -> Result<(), PdfiumError> {
         // Tests to make sure we can retrieve the correct horizontal and vertical translation deltas
         // from an object after applying a translation transformation.
 
@@ -539,8 +540,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0052: Object get scale
     #[test]
-    fn test_object_get_scale() -> Result<(), PdfiumError> {
+    fn test0052_object_get_scale() -> Result<(), PdfiumError> {
         // Tests to make sure we can retrieve the correct horizontal and vertical scale factors
         // from an object after applying a scale transformation.
 
@@ -573,8 +575,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0053: Object get rotation
     #[test]
-    fn test_object_get_rotation() -> Result<(), PdfiumError> {
+    fn test0053_object_get_rotation() -> Result<(), PdfiumError> {
         // Tests to make sure we can retrieve the correct clockwise rotation angle from an object
         // after applying a rotation transformation.
 
@@ -607,8 +610,9 @@ mod tests {
         Ok(())
     }
 
+    // TEST0054: Object get skew
     #[test]
-    fn test_object_get_skew() -> Result<(), PdfiumError> {
+    fn test0054_object_get_skew() -> Result<(), PdfiumError> {
         // Tests to make sure we can retrieve the correct skew axes values from an object
         // after applying a skew transformation.
 
