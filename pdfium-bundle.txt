@@ -1,0 +1,13 @@
+# The recipe that produces the static PDFium this crate links.
+#
+# PDFium is Chromium's build system: depot_tools, a gclient sync of the full
+# source tree, ninja — tens of gigabytes of scratch and hours of compilation.
+# That recipe lives in its own repository rather than here, so this file pins
+# WHICH revision of it produces the library, exactly as a dependency pins a
+# version. build.rs clones it at this tag into the build directory and runs it
+# when no built library is present.
+#
+# Changing either line changes the build identity, so a library produced by a
+# previous recipe is never silently reused.
+repo = https://github.com/jowharshamshiri/pdfium_bundle.git
+tag = v1.12.0

@@ -173,62 +173,220 @@ fn build_bindings_for_one_pdfium_release(release: &str) -> Result<(), BuildError
     Ok(())
 }
 
-/// Where the PDFium static library is, as a directory containing libpdfium.a.
+/// Where the PDFium static library is — PRODUCING it first when it is not
+/// already in the build directory.
 ///
-/// PDFium is a build PRODUCT and is never committed: it is Chromium's build
-/// system, tens of gigabytes of scratch and hours of compilation, produced by
-/// `pdfium_bundle`'s build script into a build directory. So this crate is
-/// TOLD where it is, and refuses to guess.
+/// PDFium is a build product and is never committed. The recipe that produces
+/// it lives in its own repository (`pdfium-bundle.txt` pins which revision), so
+/// this clones that repository into the build directory and runs it, exactly as
+/// the ffmpeg bundle builds its own archives. A consumer resolving this crate
+/// from a git tag therefore needs no manual step and no prebuilt binary.
 ///
-/// It used to guess: `current_dir()/dist/lib`, which is the directory the
-/// CONSUMER happened to be invoked from — not this crate's, and not anywhere
+/// It used to GUESS instead: `current_dir()/dist/lib`, the directory the
+/// consumer happened to be invoked from — not this crate's, and not anywhere
 /// the library would be. Being wrong there produced no message at all: the
-/// search path simply matched nothing and the failure arrived much later as an
+/// search path matched nothing and the failure arrived much later as an
 /// unresolved-symbol link error naming PDFium internals.
+///
+/// Be warned that the first build is genuinely large — Chromium's toolchain, a
+/// full source sync, tens of gigabytes of scratch and hours of compilation. It
+/// is cached by build identity afterwards, so it happens once per recipe
+/// revision and platform.
 #[cfg(feature = "static")]
 fn bundled_lib_path() -> String {
+    use std::path::PathBuf;
+
     println!("cargo:rerun-if-env-changed=PDFIUM_BUNDLE_DIST_DIR");
     println!("cargo:rerun-if-env-changed=PDFIUM_STATIC_LIB_PATH");
+    println!("cargo:rerun-if-changed=pdfium-bundle.txt");
 
-    // `PDFIUM_STATIC_LIB_PATH` names the library directory outright and is
-    // honoured first — it is the older spelling and some consumers set it.
+    // An outright override: "I already have one, here it is, build nothing."
+    // Honoured first and taken at its word — the point of naming a directory is
+    // to be believed about it.
     if let Ok(path) = std::env::var("PDFIUM_STATIC_LIB_PATH") {
         if !path.trim().is_empty() {
             return path;
         }
     }
-    let dist = std::env::var("PDFIUM_BUNDLE_DIST_DIR").unwrap_or_default();
-    if dist.trim().is_empty() {
-        panic!(
-            "pdfium-render-bundled: PDFIUM_BUNDLE_DIST_DIR is not set.\n\
-             \n\
-             This crate links a static PDFium, which is a build product — Chromium's\n\
-             build system, tens of gigabytes of scratch, hours of compilation — so it\n\
-             is not committed and cannot be built from inside a cargo build script.\n\
-             \n\
-             Produce it once with pdfium_bundle's build script, into a build\n\
-             directory, and name that directory here:\n\
-             \n\
-             \x20   PDFIUM_BUNDLE_DIST_DIR=/path/to/build/pdfium/dist\n\
-             \n\
-             `PDFIUM_STATIC_LIB_PATH` is honoured too, naming the lib/ directory\n\
-             directly. There is deliberately no default: every candidate is either a\n\
-             source tree or a directory that happens to be the caller's, and being\n\
-             wrong about it fails as an unresolved-symbol link error that names\n\
-             PDFium internals rather than the missing setting."
-        );
+
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let (repo, tag) = pinned_recipe(&manifest_dir);
+    let identity = pdfium_build_identity(&repo, &tag);
+
+    // `PDFIUM_BUNDLE_DIST_DIR` names WHERE the library goes, not merely where
+    // it might already be — so pointing it at an empty directory builds into
+    // it rather than failing. `OUT_DIR` is the default, and is cargo's own
+    // build directory; the override exists because it differs per target
+    // directory and this is far too expensive to repeat per tree.
+    let dist = match std::env::var("PDFIUM_BUNDLE_DIST_DIR") {
+        Ok(dir) if !dir.trim().is_empty() => PathBuf::from(dir),
+        _ => PathBuf::from(std::env::var("OUT_DIR").expect("cargo sets OUT_DIR"))
+            .join(format!("pdfium-dist-{identity}")),
+    };
+    let archive = dist.join("lib").join("libpdfium.a");
+    if archive.is_file() && recipe_matches(&dist, &identity) {
+        println!("cargo:rerun-if-changed={}", archive.to_string_lossy());
+        return dist.join("lib").to_string_lossy().into_owned();
     }
-    let lib_dir = std::path::Path::new(&dist).join("lib");
-    let archive = lib_dir.join("libpdfium.a");
+
+    build_pdfium(&repo, &tag, &identity, &dist);
+
     if !archive.is_file() {
         panic!(
-            "pdfium-render-bundled: {archive:?} is not present.\n\
-             PDFIUM_BUNDLE_DIST_DIR points at {dist:?}, which does not contain a built\n\
-             PDFium. Run pdfium_bundle's build script with its output directed there."
+            "pdfium-render-bundled: {archive:?} is missing after a successful run of the \n\
+             recipe at {repo} {tag}. The recipe and this crate disagree about what it \n\
+             produces."
         );
     }
     println!("cargo:rerun-if-changed={}", archive.to_string_lossy());
-    lib_dir.to_string_lossy().into_owned()
+    dist.join("lib").to_string_lossy().into_owned()
+}
+
+/// The pinned recipe: which repository, at which tag.
+#[cfg(feature = "static")]
+fn pinned_recipe(manifest_dir: &std::path::Path) -> (String, String) {
+    let path = manifest_dir.join("pdfium-bundle.txt");
+    let raw = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("pdfium-render-bundled: cannot read {path:?}: {e}"));
+    let mut repo = String::new();
+    let mut tag = String::new();
+    for line in raw.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        match line.split_once('=') {
+            Some((key, value)) => match key.trim() {
+                "repo" => repo = value.trim().to_string(),
+                "tag" => tag = value.trim().to_string(),
+                other => panic!("pdfium-render-bundled: {path:?} names unknown key '{other}'"),
+            },
+            None => panic!("pdfium-render-bundled: {path:?} line '{line}' is not key = value"),
+        }
+    }
+    if repo.is_empty() || tag.is_empty() {
+        panic!(
+            "pdfium-render-bundled: {path:?} must pin both `repo` and `tag` — an unpinned \n\
+             recipe would produce a different library on different days."
+        );
+    }
+    (repo, tag)
+}
+
+/// What the built library depends on: the recipe revision, and the platform.
+#[cfg(feature = "static")]
+fn pdfium_build_identity(repo: &str, tag: &str) -> String {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut hasher = DefaultHasher::new();
+    repo.hash(&mut hasher);
+    tag.hash(&mut hasher);
+    std::env::var("TARGET").unwrap_or_default().hash(&mut hasher);
+    format!("{:016x}", hasher.finish())
+}
+
+/// Whether a built tree was produced by THIS recipe revision.
+///
+/// A stamp beside the library, not an assumption. Reusing a library built from
+/// a different recipe is how a consumer links against something nobody asked
+/// for — and at this build's cost, nobody would rebuild to find out.
+#[cfg(feature = "static")]
+fn recipe_matches(dist: &std::path::Path, identity: &str) -> bool {
+    std::fs::read_to_string(dist.join(".pdfium-build-id"))
+        .map(|stamp| stamp.trim() == identity)
+        .unwrap_or(false)
+}
+
+/// Clone the pinned recipe into the build directory and run it.
+#[cfg(feature = "static")]
+fn build_pdfium(repo: &str, tag: &str, identity: &str, dist: &std::path::Path) {
+    use std::path::PathBuf;
+
+    let build_root = dist
+        .parent()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
+    let recipe = build_root.join(format!("pdfium-bundle-{tag}"));
+
+    // One builder at a time. This is the most expensive thing in the workspace;
+    // two cargo invocations doing it at once would be hours wasted twice.
+    let lock = build_root.join(format!("pdfium-lock-{identity}"));
+    let _ = std::fs::create_dir_all(&build_root);
+    let held = std::fs::create_dir(&lock).is_ok();
+    if !held {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(6 * 60 * 60);
+        while std::time::Instant::now() < deadline {
+            if dist.join("lib").join("libpdfium.a").is_file() && recipe_matches(dist, identity) {
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_secs(10));
+        }
+        println!("cargo:warning=pdfium-render-bundled: taking over a stale build lock at {lock:?}");
+        let _ = std::fs::remove_dir(&lock);
+        let _ = std::fs::create_dir(&lock);
+    }
+
+    let result = run_pdfium_recipe(repo, tag, &recipe, dist);
+    if result.is_ok() {
+        let _ = std::fs::write(dist.join(".pdfium-build-id"), identity);
+    }
+    let _ = std::fs::remove_dir(&lock);
+    if let Err(message) = result {
+        panic!("{message}");
+    }
+}
+
+#[cfg(feature = "static")]
+fn run_pdfium_recipe(
+    repo: &str,
+    tag: &str,
+    recipe: &std::path::Path,
+    dist: &std::path::Path,
+) -> Result<(), String> {
+    if !recipe.join("build.sh").is_file() {
+        let _ = std::fs::remove_dir_all(recipe);
+        println!("cargo:warning=pdfium-render-bundled: cloning {repo} at {tag}");
+        let status = std::process::Command::new("git")
+            .args(["clone", "--depth", "1", "--branch", tag, repo])
+            .arg(recipe)
+            .status()
+            .map_err(|e| format!("pdfium-render-bundled: cannot run git to clone {repo}: {e}"))?;
+        if !status.success() {
+            return Err(format!(
+                "pdfium-render-bundled: cloning {repo} at {tag} failed ({status})."
+            ));
+        }
+    }
+
+    println!(
+        "cargo:warning=pdfium-render-bundled: building PDFium into {dist:?}. This is \
+         Chromium's build system — tens of gigabytes of scratch and hours of compilation, \
+         once per recipe revision and platform."
+    );
+    let script = if cfg!(windows) { "build.ps1" } else { "build.sh" };
+    let mut command = if cfg!(windows) {
+        let mut c = std::process::Command::new("powershell");
+        c.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]);
+        c.arg(recipe.join(script));
+        c
+    } else {
+        let mut c = std::process::Command::new("bash");
+        c.arg(recipe.join(script));
+        c
+    };
+    let status = command
+        .current_dir(recipe)
+        .env("PDFIUM_BUNDLE_DIST_DIR", dist)
+        .status()
+        .map_err(|e| format!("pdfium-render-bundled: cannot run {script}: {e}"))?;
+    if !status.success() {
+        return Err(format!(
+            "pdfium-render-bundled: {script} from {repo} {tag} failed ({status}).\n\
+             It needs git, python3, ninja and a working C++ toolchain, and fetches \
+             Chromium's depot_tools."
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(feature = "static")]
