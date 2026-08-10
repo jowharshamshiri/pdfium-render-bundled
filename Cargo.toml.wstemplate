@@ -101,13 +101,13 @@ categories = ["api-bindings", "multimedia::images", "visualization", "wasm"]
 description = "A high-level idiomatic Rust wrapper around Pdfium, the C++ PDF library used by the Google Chromium project."
 edition = "2021"
 exclude = ["test/*.pdf"]
-homepage = "https://github.com/ajrcarey/pdfium-render"
+homepage = "https://github.com/jowharshamshiri/pdfium-render-bundled"
 keywords = ["pdf", "pdfium"]
 license = "MIT OR Apache-2.0"
 name = "pdfium-render-bundled"
 publish = true
 readme = "README.md"
-repository = "https://github.com/ajrcarey/pdfium-render"
+repository = "https://github.com/jowharshamshiri/pdfium-render-bundled"
 rust-version = "1.61"
 version = "{{ project.version }}"
 
