@@ -173,15 +173,68 @@ fn build_bindings_for_one_pdfium_release(release: &str) -> Result<(), BuildError
     Ok(())
 }
 
+/// Where the PDFium static library is, as a directory containing libpdfium.a.
+///
+/// PDFium is a build PRODUCT and is never committed: it is Chromium's build
+/// system, tens of gigabytes of scratch and hours of compilation, produced by
+/// `pdfium_bundle`'s build script into a build directory. So this crate is
+/// TOLD where it is, and refuses to guess.
+///
+/// It used to guess: `current_dir()/dist/lib`, which is the directory the
+/// CONSUMER happened to be invoked from — not this crate's, and not anywhere
+/// the library would be. Being wrong there produced no message at all: the
+/// search path simply matched nothing and the failure arrived much later as an
+/// unresolved-symbol link error naming PDFium internals.
+#[cfg(feature = "static")]
+fn bundled_lib_path() -> String {
+    println!("cargo:rerun-if-env-changed=PDFIUM_BUNDLE_DIST_DIR");
+    println!("cargo:rerun-if-env-changed=PDFIUM_STATIC_LIB_PATH");
+
+    // `PDFIUM_STATIC_LIB_PATH` names the library directory outright and is
+    // honoured first — it is the older spelling and some consumers set it.
+    if let Ok(path) = std::env::var("PDFIUM_STATIC_LIB_PATH") {
+        if !path.trim().is_empty() {
+            return path;
+        }
+    }
+    let dist = std::env::var("PDFIUM_BUNDLE_DIST_DIR").unwrap_or_default();
+    if dist.trim().is_empty() {
+        panic!(
+            "pdfium-render-bundled: PDFIUM_BUNDLE_DIST_DIR is not set.\n\
+             \n\
+             This crate links a static PDFium, which is a build product — Chromium's\n\
+             build system, tens of gigabytes of scratch, hours of compilation — so it\n\
+             is not committed and cannot be built from inside a cargo build script.\n\
+             \n\
+             Produce it once with pdfium_bundle's build script, into a build\n\
+             directory, and name that directory here:\n\
+             \n\
+             \x20   PDFIUM_BUNDLE_DIST_DIR=/path/to/build/pdfium/dist\n\
+             \n\
+             `PDFIUM_STATIC_LIB_PATH` is honoured too, naming the lib/ directory\n\
+             directly. There is deliberately no default: every candidate is either a\n\
+             source tree or a directory that happens to be the caller's, and being\n\
+             wrong about it fails as an unresolved-symbol link error that names\n\
+             PDFium internals rather than the missing setting."
+        );
+    }
+    let lib_dir = std::path::Path::new(&dist).join("lib");
+    let archive = lib_dir.join("libpdfium.a");
+    if !archive.is_file() {
+        panic!(
+            "pdfium-render-bundled: {archive:?} is not present.\n\
+             PDFIUM_BUNDLE_DIST_DIR points at {dist:?}, which does not contain a built\n\
+             PDFium. Run pdfium_bundle's build script with its output directed there."
+        );
+    }
+    println!("cargo:rerun-if-changed={}", archive.to_string_lossy());
+    lib_dir.to_string_lossy().into_owned()
+}
+
 #[cfg(feature = "static")]
 fn statically_link_pdfium() {
-    // Use our bundled PDFium static library by default
-    let bundled_lib_path = std::env::current_dir()
-        .unwrap()
-        .join("dist/lib")
-        .to_string_lossy()
-        .to_string();
-    
+    let bundled_lib_path = bundled_lib_path();
+
     println!("cargo:rustc-link-lib=static=pdfium");
     println!("cargo:rustc-link-search=native={}", bundled_lib_path);
     
@@ -219,10 +272,10 @@ fn statically_link_pdfium() {
     #[cfg(feature = "core_graphics")]
     println!("cargo:rustc-link-lib=framework=CoreGraphics");
     
-    // Allow override with environment variables if needed
-    if let Ok(path) = std::env::var("PDFIUM_STATIC_LIB_PATH") {
-        println!("cargo:rustc-link-search=native={}", path);
-    } else if let Ok(path) = std::env::var("PDFIUM_DYNAMIC_LIB_PATH") {
+    // A dynamic PDFium instead, when one is named. Mutually exclusive with the
+    // static path resolved above, which is why it is the only branch left here.
+    if let Ok(path) = std::env::var("PDFIUM_DYNAMIC_LIB_PATH") {
+        println!("cargo:rerun-if-env-changed=PDFIUM_DYNAMIC_LIB_PATH");
         println!("cargo:rustc-link-lib=dylib=pdfium");
         println!("cargo:rustc-link-search=native={}", path);
     }
