@@ -9,5 +9,11 @@
 #
 # Changing either line changes the build identity, so a library produced by a
 # previous recipe is never silently reused.
+#
+# v1.14.0 pins the PDFium revision the recipe builds. Until it, the recipe ran
+# `gclient sync` with no revision and took PDFium's tip of main, so this crate
+# linked a different PDFium every day: the Windows build stopped when Chromium
+# moved its toolchain to a Visual Studio SDK that Microsoft ships no installer
+# component for, without a line changing in either repository.
 repo = https://github.com/jowharshamshiri/pdfium_bundle.git
-tag = v1.12.0
+tag = v1.14.0
