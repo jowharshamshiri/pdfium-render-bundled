@@ -223,7 +223,7 @@ fn bundled_lib_path() -> String {
         _ => PathBuf::from(std::env::var("OUT_DIR").expect("cargo sets OUT_DIR"))
             .join(format!("pdfium-dist-{identity}")),
     };
-    let archive = dist.join("lib").join("libpdfium.a");
+    let archive = dist.join("lib").join(static_library_name());
     if archive.is_file() && recipe_matches(&dist, &identity) {
         println!("cargo:rerun-if-changed={}", archive.to_string_lossy());
         return dist.join("lib").to_string_lossy().into_owned();
@@ -240,6 +240,33 @@ fn bundled_lib_path() -> String {
     }
     println!("cargo:rerun-if-changed={}", archive.to_string_lossy());
     dist.join("lib").to_string_lossy().into_owned()
+}
+
+/// What the recipe calls the static library on this platform.
+///
+/// The recipe produces `pdfium.lib` under MSVC and `libpdfium.a` everywhere
+/// else, and says so at the top of `build.ps1`: "MSVC emits .obj (not .o); the
+/// archiver is lib.exe (not ar); the static link name is pdfium.lib (not
+/// libpdfium.a)."
+///
+/// This crate looked for `libpdfium.a` on every platform, so on Windows the
+/// recipe ran for the better part of an hour, succeeded, published
+/// `dist\lib\pdfium.lib`, and the build script then panicked with
+///
+///     "...\dist\lib\libpdfium.a" is missing after a successful run of the
+///     recipe. The recipe and this crate disagree about what it produces.
+///
+/// which is exactly what had happened. Derived from the TARGET rather than the
+/// host: a build script runs on the host and this name belongs to the thing
+/// being built.
+#[cfg(feature = "static")]
+fn static_library_name() -> &'static str {
+    // `CARGO_CFG_TARGET_ENV` is `msvc` for `*-pc-windows-msvc` and `gnu` for
+    // the MinGW targets, which do use the POSIX name.
+    match std::env::var("CARGO_CFG_TARGET_ENV").as_deref() {
+        Ok("msvc") => "pdfium.lib",
+        _ => "libpdfium.a",
+    }
 }
 
 /// The pinned recipe: which repository, at which tag.
@@ -316,7 +343,9 @@ fn build_pdfium(repo: &str, tag: &str, identity: &str, dist: &std::path::Path) {
     if !held {
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(6 * 60 * 60);
         while std::time::Instant::now() < deadline {
-            if dist.join("lib").join("libpdfium.a").is_file() && recipe_matches(dist, identity) {
+            if dist.join("lib").join(static_library_name()).is_file()
+                && recipe_matches(dist, identity)
+            {
                 return;
             }
             std::thread::sleep(std::time::Duration::from_secs(10));
