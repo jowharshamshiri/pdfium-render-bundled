@@ -344,27 +344,81 @@ fn lock_owner_is_alive(owner: &std::path::Path) -> bool {
     let Ok(text) = std::fs::read_to_string(owner) else {
         return false;
     };
-    let Ok(pid) = text.trim().parse::<i32>() else {
+    let Ok(pid) = text.trim().parse::<u32>() else {
         return true;
     };
-    if pid <= 0 {
+    if pid == 0 {
         return true;
     }
-    // Signal 0 performs the permission and existence checks and sends nothing.
-    // ESRCH — and only ESRCH — means no such process; EPERM means it is there
-    // and belongs to somebody else.
-    let alive = unsafe { libc_kill(pid, 0) } == 0
-        || std::io::Error::last_os_error().raw_os_error() != Some(3);
-    alive
+    owner_pid_is_alive(pid)
 }
 
 // `kill(2)`, declared here rather than taken from a crate: a build script's
 // dependencies are built before every build that uses it, and this needs one
 // symbol.
-#[cfg(feature = "static")]
+//
+// Unix only. There is no `kill` in the MSVC C runtime, and a bare
+// `extern "C" { fn kill }` is not a portable way to ask the question -- it
+// compiles on Windows and then fails the LINK:
+//
+//     error LNK2019: unresolved external symbol kill
+//     fatal error LNK1120: 1 unresolved externals
+//
+// which would turn this lock fix into a build that cannot produce a binary at
+// all on the one platform whose stale locks prompted it.
+#[cfg(all(feature = "static", unix))]
 extern "C" {
     #[link_name = "kill"]
     fn libc_kill(pid: i32, sig: i32) -> i32;
+}
+
+/// Signal 0 performs the permission and existence checks and sends nothing.
+/// ESRCH — and only ESRCH — means no such process; EPERM means it is there and
+/// belongs to somebody else.
+#[cfg(all(feature = "static", unix))]
+fn owner_pid_is_alive(pid: u32) -> bool {
+    if pid > i32::MAX as u32 {
+        return true;
+    }
+    // Parenthesised: at statement position a bare `unsafe { .. }` parses as a
+    // block, so the `==` would have nothing to bind to.
+    (unsafe { libc_kill(pid as i32, 0) }) == 0
+        || std::io::Error::last_os_error().raw_os_error() != Some(3)
+}
+
+/// Windows has no `kill`. `OpenProcess` for the limited-information right is
+/// the equivalent question, and the kernel is still the only party that knows.
+///
+/// A handle that opens is not on its own proof of life: a process that has
+/// exited keeps its handle openable for as long as anything holds one, and it
+/// reports `STILL_ACTIVE` only while it really is running. So the exit code
+/// decides, and the handle is always closed.
+///
+/// ERROR_INVALID_PARAMETER (87) is the unambiguous "no such pid". Anything
+/// else -- notably ERROR_ACCESS_DENIED (5) -- means a process is there that
+/// this one may not inspect, which is alive for our purposes: the rule is that
+/// only a certain absence releases the lock.
+#[cfg(all(feature = "static", windows))]
+fn owner_pid_is_alive(pid: u32) -> bool {
+    const PROCESS_QUERY_LIMITED_INFORMATION: u32 = 0x1000;
+    const ERROR_INVALID_PARAMETER: i32 = 87;
+    const STILL_ACTIVE: u32 = 259;
+
+    extern "system" {
+        fn OpenProcess(access: u32, inherit: i32, pid: u32) -> isize;
+        fn GetExitCodeProcess(handle: isize, code: *mut u32) -> i32;
+        fn CloseHandle(handle: isize) -> i32;
+    }
+
+    let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
+    if handle == 0 {
+        return std::io::Error::last_os_error().raw_os_error() != Some(ERROR_INVALID_PARAMETER);
+    }
+    let mut code: u32 = 0;
+    let read = unsafe { GetExitCodeProcess(handle, &mut code) };
+    unsafe { CloseHandle(handle) };
+    // Unreadable means undecidable, and undecidable means alive.
+    read == 0 || code == STILL_ACTIVE
 }
 
 /// Clone the pinned recipe into the build directory and run it.
