@@ -324,6 +324,49 @@ fn recipe_matches(dist: &std::path::Path, identity: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// Whether the process that wrote `owner` is still running.
+///
+/// A lock directory on its own says somebody once started a build; it cannot
+/// say whether they are still at it. The pid inside can: `kill(pid, 0)` asks
+/// the kernel, which is the only party that knows.
+///
+/// Answers TRUE when it cannot tell — an unreadable or malformed file, a pid
+/// this process may not signal. A waiter that guesses "gone" and guesses wrong
+/// starts a second builder against the first, which is hours of work done
+/// twice and two writers in one output directory. Waiting needlessly costs
+/// time; taking over wrongly costs correctness.
+///
+/// A missing file is the one unambiguous answer: locks written before this
+/// have none, and neither does a directory left by a kill between `create_dir`
+/// and the write.
+#[cfg(feature = "static")]
+fn lock_owner_is_alive(owner: &std::path::Path) -> bool {
+    let Ok(text) = std::fs::read_to_string(owner) else {
+        return false;
+    };
+    let Ok(pid) = text.trim().parse::<i32>() else {
+        return true;
+    };
+    if pid <= 0 {
+        return true;
+    }
+    // Signal 0 performs the permission and existence checks and sends nothing.
+    // ESRCH — and only ESRCH — means no such process; EPERM means it is there
+    // and belongs to somebody else.
+    let alive = unsafe { libc_kill(pid, 0) } == 0
+        || std::io::Error::last_os_error().raw_os_error() != Some(3);
+    alive
+}
+
+// `kill(2)`, declared here rather than taken from a crate: a build script's
+// dependencies are built before every build that uses it, and this needs one
+// symbol.
+#[cfg(feature = "static")]
+extern "C" {
+    #[link_name = "kill"]
+    fn libc_kill(pid: i32, sig: i32) -> i32;
+}
+
 /// Clone the pinned recipe into the build directory and run it.
 #[cfg(feature = "static")]
 fn build_pdfium(repo: &str, tag: &str, identity: &str, dist: &std::path::Path) {
@@ -337,9 +380,37 @@ fn build_pdfium(repo: &str, tag: &str, identity: &str, dist: &std::path::Path) {
 
     // One builder at a time. This is the most expensive thing in the workspace;
     // two cargo invocations doing it at once would be hours wasted twice.
+    //
+    // The lock names its OWNER. A directory on its own says only that somebody
+    // once started a build, and a build that was killed — ^C, a test runner
+    // stopped, a machine rebooted — leaves one that no longer means anything.
+    // The next build then waited the full six hours for a process that did not
+    // exist, at nought per cent CPU, which reads as a hung test rather than as
+    // a wait: `cargo test` sat for forty-eight minutes on a lock whose owner
+    // had been killed three hours earlier.
+    //
+    // So the pid goes inside, and a waiter that finds the owner gone takes over
+    // at once. Only the OWNER's absence releases it: a live builder still holds
+    // it for as long as it runs, however long that is, which is the whole point
+    // of the lock.
     let lock = build_root.join(format!("pdfium-lock-{identity}"));
+    let owner = lock.join("owner.pid");
     let _ = std::fs::create_dir_all(&build_root);
-    let held = std::fs::create_dir(&lock).is_ok();
+    let mut held = std::fs::create_dir(&lock).is_ok();
+    if held {
+        let _ = std::fs::write(&owner, std::process::id().to_string());
+    } else if !lock_owner_is_alive(&owner) {
+        // Nobody is building. Take it over now rather than in six hours.
+        println!(
+            "cargo:warning=pdfium-render-bundled: taking over an abandoned build \
+             lock at {lock:?} (its owner is gone)"
+        );
+        let _ = std::fs::remove_dir_all(&lock);
+        held = std::fs::create_dir(&lock).is_ok();
+        if held {
+            let _ = std::fs::write(&owner, std::process::id().to_string());
+        }
+    }
     if !held {
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(6 * 60 * 60);
         while std::time::Instant::now() < deadline {
@@ -348,11 +419,21 @@ fn build_pdfium(repo: &str, tag: &str, identity: &str, dist: &std::path::Path) {
             {
                 return;
             }
+            // Re-checked every time round, not once before the loop: the owner
+            // can die while this waits, and waiting on a dead one is the bug
+            // this whole arrangement exists to avoid.
+            if !lock_owner_is_alive(&owner) {
+                println!(
+                    "cargo:warning=pdfium-render-bundled: the build holding \
+                     {lock:?} went away; taking over"
+                );
+                break;
+            }
             std::thread::sleep(std::time::Duration::from_secs(10));
         }
-        println!("cargo:warning=pdfium-render-bundled: taking over a stale build lock at {lock:?}");
-        let _ = std::fs::remove_dir(&lock);
+        let _ = std::fs::remove_dir_all(&lock);
         let _ = std::fs::create_dir(&lock);
+        let _ = std::fs::write(&owner, std::process::id().to_string());
     }
 
     let result = run_pdfium_recipe(repo, tag, &recipe, dist);
